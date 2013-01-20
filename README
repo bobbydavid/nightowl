@@ -1,0 +1,5 @@
+
+1. Create NPM package.
+2. Port tlogger.sh to node.
+3. Use https://github.com/niegowski/node-daemonize2
+4. convert EVENTS to CSV
