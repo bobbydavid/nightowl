@@ -1,5 +1,15 @@
 
 1. Create NPM package.
 2. Port tlogger.sh to node.
-3. Use https://github.com/niegowski/node-daemonize2
+3. Use https://github.com/niegowski/node-daemonize2 instead of Gnome or for SSH?
 4. convert EVENTS to CSV
+5. Visualize using d3. Basic model is like this:
+
+  list<Shapes> parseFile(EVENTS.csv, CONFIG);
+
+  where CONFIG has things like:
+  { shape: 'dot', types: 'PRODACCESS', color: 'red' },
+  { shape: 'line', on_types: 'LOGIN,SAVER_OFF', off_types: 'LOGOUT,SAVER_ON', starts_on: false, color: 'blue' }
+
+  and we allow multiple calls to parseFile, union the shapes, then print.
+  Maybe indicate a z-index?
