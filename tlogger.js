@@ -3,7 +3,7 @@ var fs = require('fs'),
     csv = require('csv');
 
 
-var CONFIG_FILE = 'config.json',
+var CONFIG_FILE = __dirname + '/config.json',
     EXPECTED_CONFIG = ['logfile'],
     COLUMNS = ['date', 'type', 'data'];
 
@@ -18,6 +18,9 @@ for (var i in EXPECTED_CONFIG) {
 
 // Open the log file as a stream for appending. Add the column headings if
 // appropriate.
+if (config.logfile[0] != '/') {
+  config.logfile = __dirname + '/' + config.logfile;
+}
 var logfile_exists = fs.existsSync(config.logfile);
 var logstream = fs.createWriteStream(config.logfile, {
   flags: 'a', encoding: 'utf8', mode: 0644
