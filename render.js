@@ -18,14 +18,12 @@
   };
 
   var renderData = function(data) {
-    console.log(data);
-    return;
+    var width = 1100,
+        height = 500;
 
-    var width = (windowWidth - 50) / data.length;
-        height = windowHeight - 50;
-
-    var xScale = d3.scale.linear().domain([0, 1]).range([0, width]),
-        yScale = d3.scale.linear().domain([0, 100]).rangeRound([0, height]);
+    // 86400 seconds in one day.
+    var xScale = d3.scale.linear().domain([0, data.length]).range([0, width]),
+        yScale = d3.scale.linear().domain([0, 86400]).rangeRound([0, height]);
 
     var graph = d3.select('body').append('svg')
         .attr('class', 'graph')
