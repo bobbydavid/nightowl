@@ -1,4 +1,7 @@
 {
   "logfile": "EVENTS",
-  "logheader": "date,type,data"
+  "shapes": [
+    { "shape": "dot", "events": ["PRODACCESS"], "color": "red" },
+    { "shape": "dot", "events": ["LOGIN", "LOGOUT"], "color": "blue" }
+  ]
 }
