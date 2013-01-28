@@ -1,5 +1,6 @@
 
 (function(window) {
+  var SECONDS_PER_DAY = 86400;
 
   var render = window.render = function(config) {
     d3.csv(config.csvFile, function(events) {
@@ -7,35 +8,37 @@
     });
   };
 
-  var renderData = function(events, shapes) {
+  var renderData = function(events, shapesConfig) {
     // Parse each of the dates in the events from strings to Date objects.
     for (var i in events) {
       events[i].date = new Date(events[i].date);
     }
 
-    // Add events for day -1 to be one 1 every hour.
-    for (var i = 0; i < 23; i++) {
-      var d = new Date('January 6, 2013 '+i+':00:00');
-      events.push({ type:'FAKE', date: d })
-
-    }
-
-     // Sort the events by date.
+    // Sort the events by date.
     events.sort(function(d1, d2) {
       return d1.date - d2.date;
     });
 
-    // Bin the events into days. 86400 seconds in a day.
-    var BIN_SIZE_IN_SEC = 86400;
-    var bins = putEventsIntoBins(events, BIN_SIZE_IN_SEC);
+    // Calculate the day/location that the event occurred on, and add it to
+    // the event object.
+    var dateParser = newDateParser(events[0].date);
+    for (i in events) {
+      var tmp = dateParser(events[i].date);
+      events[i].day = tmp.day;
+      events[i].location = tmp.location;
+    }
+    var dayCount = events[events.length - 1].day + 1;
+
+    // Parse the events into shapes.
+    var shapes = shapesOfEvents(events, shapesConfig);
 
     var width = 1100,
         height = 500;
 
     var xScale = d3.scale.linear()
-                 .domain([0, bins.length]).range([0, width]),
+                 .domain([0, 365]).range([0, width]),
         yScale = d3.scale.linear()
-                 .domain([0, BIN_SIZE_IN_SEC]).rangeRound([0, height]);
+                 .domain([0, SECONDS_PER_DAY]).range([0, height]);
 
     // Create SVG element.
     var graph = d3.select('body').append('svg')
@@ -43,52 +46,99 @@
         .attr('width', width)
         .attr('height', height);
 
-    var secondsOfDate = function(dateString) {
-      var d = new Date(dateString);
-      console.log(d.getTime() / 1000 % 86400);
-      return (d.getTime() / 1000) % 86400;
-    }
-
-    graph.selectAll('rect')
-        .data(events)
+    graph.selectAll('line')
+        .data(shapes.lines)
         .enter()
-            .append('rect')
-                .attr('class', function(d) { return d.type })
-                .attr('x', function(d) { return xScale(d.binIndex); })
-                .attr('y', function(d) { return yScale(d.location); })
-                .attr('width', xScale(1))
-                .attr('height', function(d) { return yScale(800); /* yScale(d.location); */ })
+            .append('line')
+                .attr('x1', function(d) { return xScale(d.day + 0.5); })
+                .attr('y1', function(d) { return yScale(d.start); })
+                .attr('x2', function(d) { return xScale(d.day + 0.5); })
+                .attr('y2', function(d) { return yScale(d.end); })
+                .attr('stroke', function(d) { return d.color; })
+                .attr('stroke-width', 2);
+
+    graph.selectAll('circle')
+        .data(shapes.dots)
+        .enter()
+            .append('circle')
+                .attr('cx', function(d) { return xScale(d.day + 0.5); })
+                .attr('cy', function(d) { return yScale(d.location); })
+                .attr('r', 2);
 
   };
 
-  var putEventsIntoBins = function(events, binLengthInSeconds) {
+  var newDateParser = function(firstDate) {
     // Note that this implicitly uses the timezone in the browser to
     // determine when days begin and end.
-    var beginningOfFirstDate = new Date(events[0].date).setHours(0, 0, 0, 0);
-    console.log(new Date(beginningOfFirstDate));
-    var secondsSinceFirstDate = function(date) {
-      return Math.round((date - beginningOfFirstDate) / 1000);
+    var beginningOfFirstDate = new Date(firstDate).setHours(0, 0, 0, 0);
+    // Return a function that takes a date and returns the days since the
+    // first date.
+    return function(date) {
+      var s = (date - beginningOfFirstDate) / 1000;
+      return {
+        day: Math.floor(s / SECONDS_PER_DAY),
+        location: s % SECONDS_PER_DAY
+      };
     };
-    var getBinIndex = function(date) {
-      return Math.floor(secondsSinceFirstDate(date) / binLengthInSeconds);
-    };
-
-    var bins = [],
-        eventIx = 0,
-        binCount = getBinIndex(events[events.length - 1].date) + 1;
-    for (var i = 0; i < binCount; ++i) {
-      var bin = [];
-      while (eventIx < events.length &&
-             getBinIndex(events[eventIx].date) == i) {
-        var curEvent = events[eventIx++];
-        curEvent.location =
-            secondsSinceFirstDate(curEvent.date) % binLengthInSeconds;
-        curEvent.binIndex = i;
-        bin.push(curEvent);
-      }
-      bins.push(bin);
-    }
-    return bins;
   };
+
+  var color = null;
+
+  var shapesOfEvents = function(events, shapesConfig) {
+    var shapes = { 'dots': [], 'lines': [] };
+    var loginStack = [];
+
+    for (var i in events) {
+      var e = events[i];
+      switch (e.type) {
+        case 'LOGIN':
+        case 'SCREEN_UNLOCKED':
+          loginStack.push(e);
+          break;
+        case 'LOGOUT':
+        case 'SCREEN_LOCKED':
+          addLine(loginStack.pop(), e, 'steelblue', shapes.lines);
+          break;
+        case 'PRODACCESS':
+        case 'FAKE':
+        case 'SIGTERM':
+          shapes.dots.push({
+            color: 'steelblue',
+            day: e.day,
+            location: e.location,
+            text: (e.type + ' at ' + e.date)
+          });
+          break;
+        default:
+          throw 'Unknown event type: ' + e.type + '. Full event: ' + e;
+      }
+    }
+
+    var now = {
+      day: events[events.length - 1].day,
+      location: (new Date() - (new Date().setHours(0, 0, 0, 0))) / 1000
+    };
+    // XXX: Why are there extra events here?
+    console.log(loginStack);
+    while (loginStack.length > 0) {
+      console.log(loginStack[loginStack.length - 1]);
+      addLine(loginStack.pop(), now, '#ccc', shapes.lines);
+    }
+
+    return shapes;
+  };
+
+  var addLine = function(e1, e2, color, lines) {
+    for (var day = e1.day; day <= e2.day; ++day) {
+      var line_start = (day == e1.day) ? e1.location : 0;
+      var line_end = (day == e2.day) ? e2.location : SECONDS_PER_DAY - 1;
+      lines.unshift({
+        color: color,
+        day: day,
+        start: line_start,
+        end: line_end
+      });
+    }
+  }
 
 })(window);
