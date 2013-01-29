@@ -16,6 +16,13 @@ for (var i in EXPECTED_CONFIG) {
   }
 }
 
+// Set the log file path.
+var logfilePath = config.logfile;
+if (logfilePath[0] != '/') {
+  logfilePath = __dirname + '/' + logfilePath;
+}
+
+/*
 // Open the log file as a stream for appending. Add the column headings if
 // appropriate.
 if (config.logfile[0] != '/') {
@@ -28,23 +35,61 @@ var logstream = fs.createWriteStream(config.logfile, {
 if (!logfile_exists) {
   logstream.write(COLUMNS.join(',') + '\n');
 }
+*/
 
-var log = module.exports.log = function(type, opt_data, opt_callback) {
-  var row = [[Date(), type, JSON.stringify(opt_data)]];
-  csv()
-      .from.array(row, { columns: ['date', 'type', 'data'] })
-      .to.stream(logstream, { eof: true, end: false });
+/*
+// Open the log file for append.
+var openLogStream = function(next) {
+  fs.exists(logfilePath, function(exists) {
+    var wStream = fs.createWriteStream(logfilePath, {
+      flags: 'a', encoding: 'utf8', mode: 0644
+    });
+    if (exists) {
+      wStream.write(COLUMNS.join(','), '\n');
+    }
+    next(wStream);
+  });
+};
+*/
+var openLogStreamSync = function(path) {
+  var exists = fs.existsSync(path);
+  var logStream = fs.createWriteStream(path, {
+    flags: 'a', encoding: 'utf8', mode: 0644
+  });
+  if (!exists) {
+    logStream.write(COLUMNS.join(',') + '\n');
+  }
+  return logStream;
+};
+
+var logStream = openLogStreamSync(logfilePath);
+
+var log = module.exports.log = function(type, opt_data) {
+  if (!logStream) { return process.nextTick(log(type, opt_data)); }
+
+  var row = [{
+    date: Date(),
+    type: type,
+    data: JSON.stringify(opt_data)
+  }];
+  csv().from.array(row, { columns: COLUMNS })
+       .to.options({ eof: true, end: false })
+       .to.stream(logStream);
 }
 
+/*
 var close = module.exports.close = function() {
   logstream.end();
 }
+*/
 
 if (require.main === module) {
   var argv = process.argv.slice(2);
   if (1 != argv.length) {
     throw "Error: currently can only handle event specified but no data.";
   } else {
-    log(argv[0]);
+    var type = argv[0];
+    var data = argv.length > 1 ? process.argv.slice(1).join(' ') : undefined;
+    log(type, data);
   }
 }
