@@ -3,15 +3,17 @@ var Tlogger = require('./tlogger'),
 
 var dbus;
 
-function spawnDbusMonitor() {
+var spawnDbusMonitor = function() {
   var BINARY = 'dbus-monitor';
-  dbus = spawn(BINARY, ['--session', ['type=signal',
-                                          'interface=org.gnome.ScreenSaver',
-                                          'member=ActiveChanged'].join(',')]);
+  dbus = spawn(BINARY, ['--session', [
+    'type=signal',
+    'interface=org.gnome.ScreenSaver',
+    'member=ActiveChanged'
+  ].join(',')]);
   dbus.stdout.setEncoding('utf8');
   dbus.stderr.setEncoding('utf8');
   dbus.stderr.on('data', function(data) {
-    Tlogger.log('COMMENT', 'dbus-monitor error: ' + data);
+    Tlogger.log('COMMENT', null, 'dbus-monitor error: ' + data);
   });
   dbus.on('exit', function(code) {
     var error;
@@ -27,20 +29,18 @@ function spawnDbusMonitor() {
       default:
         error = 'Oops! ' + BINARY + ' exited with code ' + code + '.';
     }
-    Tlogger.log('COMMENT', error);
+    Tlogger.log('COMMENT', null, error);
   });
   return dbus;
-}
+};
 
 var exitAndLog = function(type) {
-  Tlogger.log(type, {pid: process.pid, term: process.env['TERM']});
+  Tlogger.log(type, process.pid);
   dbus.kill();
 };
 
-// TODO: catch SIGHUP, SIGTERM, SIGKILL, or whatever, and log that they
-// happened.
 var monitor = module.exports = function() {
-  Tlogger.log('LOGIN', { pid: process.pid });
+  Tlogger.log('LOGIN', process.pid);
 
   var dbus = spawnDbusMonitor();
   dbus.stdout.on('data', function(data) {
@@ -54,14 +54,6 @@ var monitor = module.exports = function() {
       exitAndLog('LOGOUT');
     }
   });
-
-/*
-  dbus.on('exit', function(code) {
-    if (0 != code) {
-      exitAndLog('CHILD_DEATH');
-    }
-  })
-*/
 };
 
 if (require.main === module) {

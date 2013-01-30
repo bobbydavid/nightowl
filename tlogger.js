@@ -5,7 +5,7 @@ var fs = require('fs'),
 
 var CONFIG_FILE = __dirname + '/config.json',
     EXPECTED_CONFIG = ['logfile'],
-    COLUMNS = ['date', 'type', 'data'];
+    COLUMNS = ['date', 'type', 'uid', 'misc'];
 
 // Load tlog config file.
 var configFile = fs.readFileSync(CONFIG_FILE, 'utf8');
@@ -64,15 +64,15 @@ var openLogStreamSync = function(path) {
 
 var logStream = openLogStreamSync(logfilePath);
 
-var log = module.exports.log = function(type, opt_data) {
-  if (!logStream) { return process.nextTick(log(type, opt_data)); }
-
-  var row = [{
+var log = module.exports.log = function(type, opt_uid, opt_misc) {
+  var row = {
     date: Date(),
     type: type,
-    data: JSON.stringify(opt_data)
-  }];
-  csv().from.array(row, { columns: COLUMNS })
+    uid: opt_uid ? opt_uid : undefined,
+    misc: ('undefined' == typeof(opt_misc)) ?
+          undefined : JSON.stringify(opt_misc)
+  };
+  csv().from.array([row], { columns: COLUMNS })
        .to.options({ eof: true, end: false })
        .to.stream(logStream);
 }
