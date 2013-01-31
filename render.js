@@ -38,7 +38,7 @@
     var shapes = shapesOfEvents(events, shapesConfig);
 
     var width = 1100,
-        height = 500;
+        height = 1000;
 
     var xScale = d3.scale.linear()
                  .domain([0, 365]).range([0, width]),
@@ -46,12 +46,14 @@
                  .domain([0, SECONDS_PER_DAY]).range([0, height]);
 
     // Create SVG element.
-    var graph = d3.select('body').append('svg')
+    var svg = d3.select('body').append('svg')
         .attr('class', 'graph')
         .attr('width', width)
         .attr('height', height);
 
-    graph.selectAll('line')
+    // TODO: Create time scales. How about background hour bars?
+
+    svg.selectAll('line')
         .data(shapes.lines)
         .enter()
             .append('line')
@@ -62,7 +64,7 @@
                 .attr('stroke', function(d) { return d.color; })
                 .attr('stroke-width', 2);
 
-    graph.selectAll('circle')
+    svg.selectAll('circle')
         .data(shapes.dots)
         .enter()
             .append('circle')
@@ -76,7 +78,7 @@
   var newDateParser = function(firstDate) {
     // Note that this implicitly uses the timezone in the browser to
     // determine when days begin and end.
-    var beginningOfFirstDate = new Date(firstDate).setHours(0, 0, 0, 0);
+    var beginningOfFirstDate = d3.time.day.floor(firstDate);
     // Return a function that takes a date and returns the days since the
     // first date.
     return function(date) {
