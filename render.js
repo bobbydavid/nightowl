@@ -1,6 +1,11 @@
-
 (function(window) {
   var SECONDS_PER_DAY = 86400;
+
+  var assert = function(x) {
+    if (!x) {
+      throw "Assertion failed.";
+    }
+  };
 
   var render = window.render = function(config) {
     d3.csv(config.csvFile, function(events) {
@@ -63,7 +68,8 @@
             .append('circle')
                 .attr('cx', function(d) { return xScale(d.day + 0.5); })
                 .attr('cy', function(d) { return yScale(d.location); })
-                .attr('r', 2);
+                .attr('r', 2)
+                .attr('fill', function(d) { return d.color; });
 
   };
 
@@ -86,26 +92,59 @@
 
   var shapesOfEvents = function(events, shapesConfig) {
     var shapes = { 'dots': [], 'lines': [] };
-    var loginStack = [];
+
+    var isLoggedIn = false;
+    var isScreenLocked = false;
+    var beginWorkingEvent = null;
+    var beginLockedEvent = null;
 
     for (var i in events) {
       var e = events[i];
+      console.log(e);
       switch (e.type) {
         case 'LOGIN':
+          assert(!isLoggedIn);
+          isLoggedIn = true;
+          assert(!beginWorkingEvent);
+          beginWorkingEvent = e;
+          break;
         case 'SCREEN_UNLOCKED':
-          loginStack.push(e);
+          assert(isLoggedIn);
+          assert(isScreenLocked);
+          assert(!beginWorkingEvent);
+          isScreenLocked = false;
+          beginWorkingEvent = e;
+          assert(beginLockedEvent);
+          if (beginLockedEvent.day == e.day) {
+            addLine(beginLockedEvent, e, '#ccf', shapes.lines);
+          }
+          beginLockedEvent = null;
           break;
         case 'LOGOUT':
+          assert(isLoggedIn);
+          assert(!isScreenLocked);
+          assert(beginWorkingEvent);
+          isLoggedIn = false;
+          addLine(beginWorkingEvent, e, 'steelblue', shapes.lines);
+          beginWorkingEvent = null;
+          break;
         case 'SCREEN_LOCKED':
-          addLine(loginStack.pop(), e, 'steelblue', shapes.lines);
+          assert(isLoggedIn);
+          assert(!isScreenLocked);
+          assert(beginWorkingEvent);
+          isScreenLocked = true;
+          addLine(beginWorkingEvent, e, 'steelblue', shapes.lines);
+          beginWorkingEvent = null;
+          assert(!beginLockedEvent);
+          beginLockedEvent = e;
           break;
         case 'PRODACCESS':
-        case 'FAKE':
-        case 'SIGTERM':
+          assert(isLoggedIn);
+          assert(!isScreenLocked);
           shapes.dots.push({
-            color: 'steelblue',
             day: e.day,
             location: e.location,
+            color: '#555',
             text: (e.type + ' at ' + e.date)
           });
           break;
@@ -116,22 +155,44 @@
 
     var now = {
       day: events[events.length - 1].day,
-      location: (new Date() - (new Date().setHours(0, 0, 0, 0))) / 1000
+      location: (new Date() - (new Date().setHours(0, 0, 0, 0))) / 1000,
+      color: '#c00',
+      text: 'Now'
     };
+
+    // Add a dot to represent the present.
+    shapes.dots.push(now);
+
+    if (isLoggedIn && !isScreenLocked) {
+      assert(beginWorkingEvent);
+      // Complete the last line until the present.
+      addLine(beginWorkingEvent, now, 'steelblue', shapes.lines);
+    }
+
+
+    /*
     // XXX: Why are there extra events here?
     console.log(loginStack);
     while (loginStack.length > 0) {
       console.log(loginStack[loginStack.length - 1]);
       addLine(loginStack.pop(), now, '#ccc', shapes.lines);
     }
+    */
 
     return shapes;
   };
 
   var addLine = function(e1, e2, color, lines) {
+    var shown = false;
     for (var day = e1.day; day <= e2.day; ++day) {
       var line_start = (day == e1.day) ? e1.location : 0;
       var line_end = (day == e2.day) ? e2.location : SECONDS_PER_DAY - 1;
+      if (line_end + 1 - line_start == SECONDS_PER_DAY && !shown) {
+        shown = true;
+        console.log('LONG LINE: ');
+        console.log(e1);
+        console.log(e2);
+      }
       lines.unshift({
         color: color,
         day: day,
