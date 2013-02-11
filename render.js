@@ -37,11 +37,11 @@
     // Parse the events into shapes.
     var shapes = shapesOfEvents(events, shapesConfig);
 
-    var width = 1100,
+    var width = 400,
         height = 1000;
 
     var xScale = d3.scale.linear()
-                 .domain([0, 365]).range([0, width]),
+                 .domain([0, dayCount]).range([0, width - 20]),
         yScale = d3.scale.linear()
                  .domain([0, SECONDS_PER_DAY]).range([0, height]);
 
@@ -62,7 +62,9 @@
                 .attr('x2', function(d) { return xScale(d.day + 0.5); })
                 .attr('y2', function(d) { return yScale(d.end); })
                 .attr('stroke', function(d) { return d.color; })
-                .attr('stroke-width', 2);
+                .attr('stroke-width', xScale(0.7))
+                .append('title')
+                    .attr('html', function(d) { return 'hover!'; });
 
     svg.selectAll('circle')
         .data(shapes.dots)
@@ -70,8 +72,10 @@
             .append('circle')
                 .attr('cx', function(d) { return xScale(d.day + 0.5); })
                 .attr('cy', function(d) { return yScale(d.location); })
-                .attr('r', 2)
-                .attr('fill', function(d) { return d.color; });
+                .attr('r', xScale(0.5))
+                .attr('fill', 'none')
+                .attr('stroke', function(d) { return d.color; })
+                .attr('stroke-width', xScale(0.1));
 
   };
 
@@ -157,7 +161,7 @@
 
     var now = {
       day: events[events.length - 1].day,
-      location: (new Date() - (new Date().setHours(0, 0, 0, 0))) / 1000,
+      location: (new Date() - d3.time.day.floor(new Date())) / 1000,
       color: '#c00',
       text: 'Now'
     };
@@ -170,16 +174,6 @@
       // Complete the last line until the present.
       addLine(beginWorkingEvent, now, 'steelblue', shapes.lines);
     }
-
-
-    /*
-    // XXX: Why are there extra events here?
-    console.log(loginStack);
-    while (loginStack.length > 0) {
-      console.log(loginStack[loginStack.length - 1]);
-      addLine(loginStack.pop(), now, '#ccc', shapes.lines);
-    }
-    */
 
     return shapes;
   };
