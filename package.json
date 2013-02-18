@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "author": "Robert Martin <rdmartin3@gmail.com>",
   "dependencies": {
+    "connect": "~2.7.2",
     "csv": "x.x.x"
   },
   "engine": "node >= 0.8.18"
