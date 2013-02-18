@@ -1,6 +1,6 @@
 {
-  "name": "tlog",
-  "description": "blank",
+  "name": "nightowl",
+  "description": "Track and visualize your work hours.",
   "version": "0.0.1",
   "author": "Robert Martin <rdmartin3@gmail.com>",
   "dependencies": {
