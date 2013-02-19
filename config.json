@@ -1,7 +1,3 @@
 {
-  "logfile": "EVENTS",
-  "shapes": [
-    { "shape": "dot", "events": ["PRODACCESS"], "color": "red" },
-    { "shape": "dot", "events": ["LOGIN", "LOGOUT"], "color": "blue" }
-  ]
+  "logfile": "log/EVENTS"
 }

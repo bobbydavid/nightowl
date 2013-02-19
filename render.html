@@ -7,25 +7,51 @@
   <script src="render.js"></script>
   <style>
 
-body {
+
+#mySvgHolder {
   text-align: center;
-  padding: 20px;
 }
 
-.graph {
+#mySvgHolder svg {
+  display: block;
   margin: 0 auto;
+  border: 1px solid #eee;
 }
 
-.graph rect {
-   fill: gray;
-   stroke: white;
+.screenOn {
+  fill: #67e;
 }
+.screenOff {
+  fill: #aaa;
+}
+.loggedOut {
+  fill: #eee;
+}
+#gXAxis text {
+  fill: #ddd;
+  font-family: sans-serif;
+}
+#gXAxis .vertical-tick {
+  stroke-width: 2px;
+  stroke: #f8f8f8;
+}
+
 
   </style>
 </head>
 <body>
+  <h1>AppName Demo</h1>
+  <p>The <code>render()</code> function loads a CSV file and fills the given
+    SVG element with a graph. Learn more by reading the comments in
+    <tt>render.js</tt>.
+  </p>
+  <div id="mySvgHolder"></div>
   <script>
-    render({ csvFile: 'EVENTS' });
+    render({
+        csvFile: 'log/EVENTS',
+        svgHolder: document.getElementById('mySvgHolder'),
+        width: 600
+    });
   </script>
 </body>
 </html>

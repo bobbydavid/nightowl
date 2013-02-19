@@ -85,11 +85,13 @@ var close = module.exports.close = function() {
 
 if (require.main === module) {
   var argv = process.argv.slice(2);
-  if (1 != argv.length) {
-    throw "Error: currently can only handle event specified but no data.";
+  if (argv.length > 2) {
+    throw 'Usage: ' + process.argv[0] + ' ' + process.argv[1] + ' ' +
+          '{{event}} {{optional UID}}';
   } else {
     var type = argv[0];
-    var data = argv.length > 1 ? process.argv.slice(1).join(' ') : undefined;
-    log(type, data);
+    var uid = argv[1];
+    console.log({type: type, uid: uid});
+    log(type, uid);
   }
 }
