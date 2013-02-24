@@ -7,5 +7,9 @@
     "connect": "~2.7.2",
     "csv": "x.x.x"
   },
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*"
+  },
   "engine": "node >= 0.8.18"
 }
