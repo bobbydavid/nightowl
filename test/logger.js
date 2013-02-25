@@ -97,4 +97,9 @@ describe('loggerFactory', function() {
       this.logger.log('COMMENT', 'third', callback);
     });
   });
+
+  describe('Main', function() {
+    // TODO: When called as the main library, the logger should parse command
+    //       line arguments and log them.
+  });
 });
